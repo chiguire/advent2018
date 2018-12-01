@@ -9,17 +9,22 @@ import Data.List
 
 duplicateIn :: (Eq a) => [a] -> Bool
 duplicateIn [] = False
-duplicateIn (x:xs) = x `elem` xs || duplicateIn(xs)
+duplicateIn (x:xs) = x `elem` xs || duplicateIn xs
 
 -- Answers
 
 advent1_1 = foldl (+) 0 input
 
-advent1_2 = last $ takeWhile (\x -> not $ duplicateIn x) $ inits $ scanl (+) 0 $ cycle input
+advent1_2 = last $ head $ dropWhile (\x -> not $ duplicateIn x) $ inits $ scanl (+) 0 $ cycle input
 
 -- Input
 removePlus ('+':x) = x
 removePlus x = x
+
+input2 = map (\x -> read $ removePlus x :: Int) $ lines [here|+1
+-2
++3
++1|]
 
 input = map (\x -> read $ removePlus x :: Int) $ lines [here|-17
 -20
