@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes #-}
 module Advent1
-    ( advent1_1, advent1_2, list, bloyd, zippy, elim
+    ( advent1_1, advent1_2
     ) where
 
 
@@ -15,11 +15,8 @@ duplicateIn (x:xs) = x `elem` xs || duplicateIn xs
 
 advent1_1 = foldl (+) 0 input
 
-list = scanl' (+) 0 $ cycle input
-bloyd = scanl' (+) 0 $ cycle input
-zippy = zip list $ inits bloyd
-elim (a, b) = a `elem` b
-advent1_2 = fst . head . filter (elim) $ zippy
+advent1_2 = fst . head . filter (\(a,b) -> a `elem` b) $ zip list $ inits list
+          where list = scanl' (+) 0 $ cycle input
 
 -- Input
 removePlus ('+':x) = x
