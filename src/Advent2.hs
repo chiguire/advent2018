@@ -20,7 +20,11 @@ advent2_1 = (countFilter contains2) * (countFilter contains3)
                 contains3 hm = containsN 3 hm
                 allHistograms = map (histogram) input
 
-advent2_2 = 0
+advent2_2 = snd $ head $ filter ((== 1) . fst) lengthsWithDiffs
+         where cartesianProd = [zip a b| a <- input, b <- input, a /= b]
+               nonMatchingLettersLength = map (length . (filter $ uncurry (/=))) cartesianProd
+               matchingLetters = map (filter $ uncurry (==)) cartesianProd
+               lengthsWithDiffs = zip nonMatchingLettersLength matchingLetters
 
 -- Input
 
