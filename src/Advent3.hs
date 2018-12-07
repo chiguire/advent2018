@@ -12,7 +12,7 @@ import Data.Char
 import qualified Data.Text as T
 import Text.Parsec.Combinator (many1)
 
-import qualified Data.HashMap.Strict as HM
+import qualified Data.HashMap.Lazy as HM
 
 import Data.Either
 
@@ -44,9 +44,11 @@ claimList = do l <- many claimLine
                return l
 
 claim :: HM.HashMap (Int, Int) [Claim] -> Claim -> HM.HashMap (Int, Int) [Claim]
-claim registeredClaims cl = foldl (insertPiece) registeredClaims generatePieces
+claim registeredClaims cl = foldl (insertPiece) registeredClaims $ generatePieces cl
                           where insertPiece hm p = HM.insert p (cl : (HM.lookupDefault [] p hm)) hm
-                                generatePieces = [(i,j) | i <- [(claimLeft cl)..(-1 + claimLeft cl + claimWidth cl)], j <- [(claimTop cl)..(-1 + claimTop cl + claimHeight cl)]]
+
+generatePieces :: Claim -> [(Int, Int)]
+generatePieces cl = [(i,j) | i <- [(claimLeft cl)..(-1 + claimLeft cl + claimWidth cl)], j <- [(claimTop cl)..(-1 + claimTop cl + claimHeight cl)]]
 
 claims :: [Claim] -> HM.HashMap (Int, Int) [Claim]
 claims cL = foldl (claim) HM.empty cL
@@ -61,7 +63,8 @@ advent3_1 = do cL <- parseClaim input
 
 advent3_2 = do cL <- parseClaim input
                let cls = claims cL
-               return $ head $ HM.elems $ HM.filter ((== 1) . length) cls
+               let doFilter cl = all ((== 1) . length) $ HM.elems $ HM.filter (elem cl) cls
+               return $ head $ filter (doFilter) cL
 
 -- Input
 
