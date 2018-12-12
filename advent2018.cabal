@@ -23,6 +23,8 @@ library
                      , heredoc
                      , text
                      , containers
+                     , time
+                     , array
                      , unordered-containers
                      , parsec
   default-language:    Haskell2010
