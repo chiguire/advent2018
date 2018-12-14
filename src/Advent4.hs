@@ -159,14 +159,12 @@ guardSleepTime eLM = [(guardId, minutesAsleep) | guardId <- nub $ map (fst . snd
 
 -- Answers
 
--- maximumBy (\(_,_,x1) (_,_,x2) -> compare x1 x2) $ dayMinuteSum $ everyLittleMinute input
-
 advent4_1 = maximumBy (compareThird) $ filter (\(g,_,_) -> g == guardMostAsleep) $ dayMinuteSum eLM
     where eLM = everyLittleMinute input
           guardMostAsleep = fst . maximumBy (\(_,m1) (_,m2) -> compare m1 m2) $ guardSleepTime $ eLM
           compareThird (_,_,x1) (_,_,x2) = compare x1 x2
 
-advent4_2 = 0
+advent4_2 = maximumBy (\(_,_,x1) (_,_,x2) -> compare x1 x2) $ dayMinuteSum $ everyLittleMinute input
 
 -- Input
 
