@@ -15,13 +15,13 @@ import Text.Parsec.Combinator (many1)
 import Data.Time
 import Data.List
 import Data.Ord
-import Data.Array
-import Data.Sequence
+import Data.Sequence (Seq, (|>), fromList)
+import Data.Foldable (toList)
 
 import Control.Monad.State.Lazy as S
 
 data LogLine = MkLine {
-  llLocalTime :: LocalTime,
+  llDateTime :: UTCTime,
   llAction :: GuardAction
 } deriving (Show, Eq)
 
@@ -56,7 +56,7 @@ logLine = do char '['
              action <- guardAction
              char '\n'
              return MkLine {
-                 llLocalTime = LocalTime {
+                 llDateTime = localTimeToUTC utc $ LocalTime {
                      localDay = fromGregorian (read year :: Integer) (read month :: Int) (read day :: Int),
                      localTimeOfDay = TimeOfDay { todHour = (read hour :: Int), todMin = (read minute :: Int), todSec = 0}
                  },
@@ -72,22 +72,21 @@ parseLog i = parse logList "" i
 
 -- Organise into queryable information
 
-data SleepLog = Array (Int, Int) (Int, Bool)
-type SleepLogEntries = Seq (LocalTime, (Int, Bool))
+type SleepLogEntries = Seq (UTCTime, (Int, Bool))
 data WatchState = MkWatchState {
-  wsLocalTime :: LocalTime,
+  wsDateTime :: UTCTime,
   wsAsleep :: Bool,
   wsGuardId :: Int
 }
 
-checkAsleep :: GuardAction -> Bool -> Bool
-checkAsleep FallAsleep _ = True
-checkAsleep WakeUp     _ = False
-checkAsleep _ asleep     = asleep
+checkAsleep :: GuardAction -> Bool
+checkAsleep FallAsleep     = True
+checkAsleep WakeUp         = False
+checkAsleep (BeginShift _) = False
   
 checkGuardId :: GuardAction -> Int -> Int
 checkGuardId (BeginShift newId) _ = newId
-checkGuardId _ oldId              = oldId
+checkGuardId _ oldId = oldId
 
 sleepLogColumns = (0,59)
 sleepLogRows sl = (min sleepLogRows'', max sleepLogRows'')
@@ -96,39 +95,76 @@ sleepLogRows sl = (min sleepLogRows'', max sleepLogRows'')
           sleepLogRows' (l:ll) r
             | (logDay l) `elem` r    = sleepLogRows' ll r
             | otherwise          = sleepLogRows' ll ((logDay l):r)
-          logDay l               = localDay $ llLocalTime l
+          logDay l               = utctDay $ llDateTime l
 
 followLogs :: SleepLogEntries -> [LogLine] -> S.State WatchState SleepLogEntries
 followLogs sle [] = do
            return sle
 followLogs sle (l:ll) = do
            ws <- get
-           let logDate = llLocalTime l
+           let logDate = llDateTime l
            let ws' = MkWatchState {
-               wsLocalTime    = logDate,
-               wsAsleep = checkAsleep (llAction l) $ wsAsleep ws,
-               wsGuardId     = checkGuardId (llAction l) $ wsGuardId ws
+               wsDateTime = logDate,
+               wsAsleep   = checkAsleep (llAction l),
+               wsGuardId  = checkGuardId (llAction l) $ wsGuardId ws
            }
            let sle' = (sle |> (logDate, (wsGuardId ws', wsAsleep ws')))
            put ws'
            followLogs sle' ll
 
-startState (MkLine { llLocalTime = date, llAction = (BeginShift guardId)}) = MkWatchState {
-  wsLocalTime = date, 
+startState (MkLine { llDateTime = date, llAction = (BeginShift guardId)}) = MkWatchState {
+  wsDateTime = date, 
   wsAsleep = False, 
   wsGuardId = guardId
 }
 
-stateChanges = do
+-- At what times does a guard change posts or falls asleep or awakes? Only those times
+
+stateChanges i = do
       sL <- sortedLogs
-      return $ S.evalState (followLogs empty $ tail sL) $ startState $ head sL
-      where sortedLogs = do
-               logs <- parseLog input
-               let sL = Data.List.sortBy (comparing llLocalTime) logs
+      return $ S.evalState (followLogs (startingList $ head sL) (tail sL)) (startingState sL)
+      where startingState sL = startState $ head sL
+            startingList ll = fromList [(llDateTime ll, firstLineAction $ llAction ll)]
+            firstLineAction (BeginShift guardId) = (guardId, False)
+            sortedLogs = do
+               logs <- parseLog i
+               let sL = Data.List.sortBy (comparing llDateTime) logs
                return sL
+
+addSeconds :: UTCTime -> Integer -> UTCTime
+addSeconds ti seconds = addUTCTime (fromInteger seconds) ti
+
+-- Generate times, minute to minute, with the current guard id and whether they're asleep
+-- Filtered by only midgnight hours
+
+everyLittleMinute i = concatMap (generateTimes) $ zip sC $ tail sC
+    where sC = toList $ either (error "error") (id) $ stateChanges i
+          generateTimes ((t1, (gId, asleep)), (t2, _)) = [(t, (gId, asleep)) | i <- [0..(truncate $ realToFrac $ diffUTCTime t2 t1)], 
+                               i `mod` 60 == 0,
+                               let t = addSeconds t1 i,
+                               let tHour = todHour $ timeToTimeOfDay $ utctDayTime t,
+                               tHour == 0,
+                               t < t2 ]
+
+-- Array of day vs. minute
+
+dayMinuteSum eLM = [(guardId, minute, sumMinute) | guardId <- nub $ map (fst . snd) eLM,
+                                                   minute <- [0..59],
+                                                   let sumMinute = length $ filter (\((_,m),(g,a)) -> a && (m == minute) && (g == guardId)) queryLogList] 
+    where queryLogList = map (\(d,x) -> ((utctDay d, minuteFromDay d),x)) eLM
+          minuteFromDay = todMin . localTimeOfDay . utcToLocalTime utc
+
+guardSleepTime eLM = [(guardId, minutesAsleep) | guardId <- nub $ map (fst . snd) eLM,
+                                                 let minutesAsleep = length $ filter (\(_,(g,a)) -> a && (g == guardId)) eLM]
+
 -- Answers
 
-advent4_1 = stateChanges
+-- maximumBy (\(_,_,x1) (_,_,x2) -> compare x1 x2) $ dayMinuteSum $ everyLittleMinute input
+
+advent4_1 = maximumBy (compareThird) $ filter (\(g,_,_) -> g == guardMostAsleep) $ dayMinuteSum eLM
+    where eLM = everyLittleMinute input
+          guardMostAsleep = fst . maximumBy (\(_,m1) (_,m2) -> compare m1 m2) $ guardSleepTime $ eLM
+          compareThird (_,_,x1) (_,_,x2) = compare x1 x2
 
 advent4_2 = 0
 
