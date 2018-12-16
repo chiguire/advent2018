@@ -1,8 +1,10 @@
 module Advent5
-    ( advent5_1, advent5_2, input, input2
+    ( advent5_1, advent5_2, input, input2, uniquePolymers, removePolymer, react, reactAfterRemove
     ) where
 
 import Data.Char
+import Data.List
+--UrtkybUCHDHqUgBVnS
 
 reduceR [] a = [a]
 reduceR l@(a:x) b
@@ -13,11 +15,21 @@ canReduce a b = (same a b ) && (differentPolarities a b)
     where same a b = (toLower a) == (toLower b)
           differentPolarities a b = (isLower a) /= (isLower b)
 
+react i = reverse $ foldl (reduceR) [] i
+
+-- Part 2 
+
+uniquePolymers i = nub $ map (toLower) i
+
+removePolymer c i = filter (\x -> c /= (toLower x)) i
+
+reactAfterRemove i = map (\x -> (x, react . removePolymer x $ i)) $ uniquePolymers i
+
 -- Answers
 
-advent5_1 = length $ reverse $ foldl (reduceR) [] input
+advent5_1 = length $ react input
 
-advent5_2 = 0
+advent5_2 = length $ snd $ minimumBy (\(_,a) (_,b) -> compare (length a) (length b)) $ reactAfterRemove input
 
 -- Input
 
