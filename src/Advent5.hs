@@ -4,7 +4,6 @@ module Advent5
 
 import Data.Char
 import Data.List
---UrtkybUCHDHqUgBVnS
 
 reduceR [] a = [a]
 reduceR l@(a:x) b
