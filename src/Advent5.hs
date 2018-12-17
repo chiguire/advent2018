@@ -1,5 +1,5 @@
 module Advent5
-    ( advent5_1, advent5_2, input, input2, uniquePolymers, removePolymer, react, reactAfterRemove
+    ( advent5_1, advent5_2
     ) where
 
 import Data.Char
