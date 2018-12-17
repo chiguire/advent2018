@@ -5,12 +5,15 @@ module Advent7
 
 import Text.Heredoc
 import Data.Ord
+import Data.List
 
 import Text.Parsec
 import Text.Parsec.Char
 import Text.Parsec.String
 import Data.Char
 import Text.Parsec.Combinator (many1)
+
+import qualified Data.Set as S
 
 -- Parse text into tree
 
@@ -26,7 +29,7 @@ stepLine = do
     item <- letter
     string " can begin."
     endOfLine
-    return Step precede item
+    return $ Step precede item
 
 stepList :: Parser [Step]
 stepList = do 
@@ -38,12 +41,27 @@ parseSteps i = parse stepList "" i
 
 -- Assemble list of steps into tree
 
--- sortSteps l = sortBy (cmp) $ nub $ mapConcat (\(Step c d) -> [c, d]) l
---    where cmp a b = 
+startNodes l = S.toList $ S.difference startSet endSet
+    where theSet f = S.fromList $ map f l 
+          startSet = theSet (\(Step a _) -> a)
+          endSet   = theSet (\(Step _ a) -> a)
+
+endNodes l = nub $ S.toList $ S.difference endSet startSet
+    where theSet f = S.fromList $ map f l 
+          startSet = theSet (\(Step a _) -> a)
+          endSet   = theSet (\(Step _ a) -> a)
+
+topologicalSort [] = []
+topologicalSort l = (sort starts) ++ (topologicalSort ends) ++ (leaves)
+    where starts = startNodes l
+          ends = filter (\(Step a _) -> a `notElem` starts) l
+          leaves = endNodes l
 
 -- Answers
 
-advent7_1 = 0
+advent7_1 = topologicalSort stepList
+    where stepList = either (error "error") (id) $ parseSteps input2
+    
 
 advent7_2 = 0
 
