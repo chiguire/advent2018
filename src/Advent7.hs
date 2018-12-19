@@ -19,7 +19,7 @@ import qualified Data.Set as S
 
 data Step = Step Char Char
 
-data Tree = Tree Char [Tree] deriving (Show)
+data Tree = Tree Char [Tree] deriving (Show, Eq)
 
 stepLine :: Parser Step
 stepLine = do
@@ -46,21 +46,20 @@ startNodes l = S.toList $ S.difference startSet endSet
           startSet = theSet (\(Step a _) -> a)
           endSet   = theSet (\(Step _ a) -> a)
 
-endNodes l = nub $ S.toList $ S.difference endSet startSet
-    where theSet f = S.fromList $ map f l 
-          startSet = theSet (\(Step a _) -> a)
-          endSet   = theSet (\(Step _ a) -> a)
+--endNodes l = S.toList $ S.difference endSet startSet
+--    where theSet f = S.fromList $ map f l 
+--          startSet = theSet (\(Step a _) -> a)
+--          endSet   = theSet (\(Step _ a) -> a)
 
-topologicalSort [] = []
-topologicalSort l = (sort starts) ++ (topologicalSort ends) ++ (leaves)
-    where starts = startNodes l
-          ends = filter (\(Step a _) -> a `notElem` starts) l
-          leaves = endNodes l
+listToGraph c l = Tree c children
+  where children = map (\b -> listToGraph b stepsNotComingFromStartNode) $ stepsComingFromStartNode
+        stepsComingFromStartNode = sort $ map (\(Step _ b) -> b) $ filter (\(Step a _ ) -> c == a) l
+        stepsNotComingFromStartNode = filter (\(Step a _ ) -> c /= a) l
 
 -- Answers
 
-advent7_1 = topologicalSort stepList
-    where stepList = either (error "error") (id) $ parseSteps input2
+advent7_1 = listToGraph (head $ startNodes stepList) stepList
+    where stepList = either (error "error") (id) $ parseSteps input
     
 
 advent7_2 = 0
