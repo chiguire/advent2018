@@ -58,8 +58,9 @@ listToGraph c l = Tree c children
 
 -- Answers
 
-advent7_1 = listToGraph (head $ startNodes stepList) stepList
-    where stepList = either (error "error") (id) $ parseSteps input
+advent7_1 = tree
+    where stepList = either (error "error") (id) $ parseSteps input2
+          tree = listToGraph (head $ startNodes stepList) stepList
     
 
 advent7_2 = 0

@@ -10,4 +10,4 @@ advent14_2 = 0
 
 -- Input
 
-input = 0
+input = 580741

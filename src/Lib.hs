@@ -16,6 +16,16 @@ import Advent11
 import Advent12
 import Advent13
 import Advent14
+import Advent15
+import Advent16
+import Advent17
+import Advent18
+import Advent19
+import Advent20
+import Advent21
+import Advent22
+import Advent23
+import Advent24
 
 
 execLib :: String -> String
@@ -47,4 +57,24 @@ execLib x = case x of "advent1_1" -> show advent1_1
                       "advent13_2" -> show advent13_2
                       "advent14_1" -> show advent14_1
                       "advent14_2" -> show advent14_2
+                      "advent15_1" -> show advent15_1
+                      "advent15_2" -> show advent15_2
+                      "advent16_1" -> show advent16_1
+                      "advent16_2" -> show advent16_2
+                      "advent17_1" -> show advent17_1
+                      "advent17_2" -> show advent17_2
+                      "advent18_1" -> show advent18_1
+                      "advent18_2" -> show advent18_2
+                      "advent19_1" -> show advent19_1
+                      "advent19_2" -> show advent19_2
+                      "advent20_1" -> show advent20_1
+                      "advent20_2" -> show advent20_2
+                      "advent21_1" -> show advent21_1
+                      "advent21_2" -> show advent21_2
+                      "advent22_1" -> show advent22_1
+                      "advent22_2" -> show advent22_2
+                      "advent23_1" -> show advent23_1
+                      "advent23_2" -> show advent23_2
+                      "advent24_1" -> show advent24_1
+                      "advent24_2" -> show advent24_2
                       otherwise -> "Failed!"
